@@ -70,6 +70,7 @@
 #include <system/camera.h>
 
 #include "CameraService.h"
+#include "api1/CameraClient.h"
 #include "api1/Camera2Client.h"
 #include "api2/CameraDeviceClient.h"
 #include "utils/CameraTraces.h"
@@ -894,10 +895,17 @@ Status CameraService::makeClient(const sp<CameraService>& cameraService,
     // Create CameraClient based on device version reported by the HAL.
     switch(deviceVersion) {
         case CAMERA_DEVICE_API_VERSION_1_0:
-            ALOGE("Camera using old HAL version: %d", deviceVersion);
-            return STATUS_ERROR_FMT(ERROR_DEPRECATED_HAL,
-                    "Camera device \"%s\" HAL version %d no longer supported",
-                    cameraId.string(), deviceVersion);
+            if (effectiveApiLevel == API_1) {  // Camera1 API route
+                sp<ICameraClient> tmp = static_cast<ICameraClient*>(cameraCb.get());
+                *client = new CameraClient(cameraService, tmp, packageName, featureId,
+                        api1CameraId, facing, sensorOrientation, clientPid, clientUid,
+                        servicePid);
+            } else { // Camera2 API route
+                ALOGW("Camera using old HAL version: %d", deviceVersion);
+                return STATUS_ERROR_FMT(ERROR_DEPRECATED_HAL,
+                        "Camera device \"%s\" HAL version %d does not support camera2 API",
+                        cameraId.string(), deviceVersion);
+            }
             break;
         case CAMERA_DEVICE_API_VERSION_3_0:
         case CAMERA_DEVICE_API_VERSION_3_1:
