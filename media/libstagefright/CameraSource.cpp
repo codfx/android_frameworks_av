@@ -162,6 +162,12 @@ static int32_t getColorFormat(const char* colorFormat) {
         return OMX_COLOR_FormatAndroidOpaque;
     }
 
+    // Qualcomm HALv1: NV12 with the Y plane padded to 32 scanlines (the video
+    // encoder's native layout), so the encoder must not realign it.
+    if (!strcmp(colorFormat, "nv12-venus")) {
+        return 0x7FA30C04; // QOMX_COLOR_FORMATYUV420PackedSemiPlanar32m
+    }
+
     ALOGE("Uknown color format (%s), please add it to "
          "CameraSource::getColorFormat", colorFormat);
 
